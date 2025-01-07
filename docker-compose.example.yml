@@ -1,0 +1,212 @@
+name: media-stack
+services:
+  # To use/enable VPN, Run this compose file with --profile=vpn. Do NOT run without VPN unless for testing purposes.
+  vpn:
+    ## Read https://github.com/qdm12/gluetun-wiki/tree/main/setup/providers for details on configuring VPN for your service provider.
+    profiles: ["vpn"]
+    container_name: vpn
+    image: qmcgaw/gluetun:v3.38.0
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
+      - OPENVPN_USER=${OPENVPN_USER}
+      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
+      ## For list of server countries, visit https://raw.githubusercontent.com/qdm12/gluetun/master/internal/storage/servers.json
+      ## When VPN_SERVICE_PROVIDER is custom. Comment the below line
+      - SERVER_COUNTRIES=${SERVER_COUNTRIES}
+      # - FREE_ONLY=on  # Valid with protonvpn only. Value willbe set "on" if using free subscription provided by protonvpn
+
+      ## Enable below if VPN_SERVICE_PROVIDER=custom
+      # - VPN_TYPE=openvpn # or wireguard. 
+
+      ## If VPN_TYPE is openvpn
+      # - OPENVPN_CUSTOM_CONFIG=/gluetun/custom.conf
+
+      ## If VPN_TYPE is wireguard, uncomment and replace below env variables as required.
+      # - VPN_ENDPOINT_IP=${VPN_ENDPOINT_IP}                                    # Replace with your wg endpoint ip or domain
+      # - VPN_ENDPOINT_PORT=${VPN_ENDPOINT_PORT}                                # Replace with wg server port
+      # - WIREGUARD_PUBLIC_KEY=${WIREGUARD_PUB_KEY}                             # Replace with your wg public key
+      # - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIV_KEY}                           # Replace with your wg client private key
+      # - WIREGUARD_PRESHARED_KEY=${WIREGUARD_PSK}                              # Replaced with your wg pre-shared key
+      # - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESS}                              # Replace with wg address
+
+    ## Enable volume if VPN_SERVICE_PROVIDER=custom and VPN_TYPE=openvpn is used
+    # volumes:
+      # - /path/to/config/config.conf:/gluetun/config.conf:ro
+
+    networks:
+      - media-network
+    
+    # Uncomment/enable below ports if VPN is used/enabled
+    ports:
+    # qbittorrent ports
+      - 5080:5080
+      - 6881:6881
+      - 6881:6881/udp
+    # prowlarr ports
+      - 9696:9696
+    restart: "unless-stopped"
+
+  ## Default credentials are randomized on first start. You can find creds by running 'docker logs qbittorrent | grep password' from the terminal ##
+  ## Change password after install from UI -> Tools -> Options -> WebUI ##
+  qbittorrent:
+    container_name: qbittorrent
+    image: lscr.io/linuxserver/qbittorrent:4.6.4
+
+    # Unomment below if vpn is enabled
+    depends_on:               # Uncomment this line if vpn is enabled
+      - vpn                   # Uncomment this line if vpn is enabled
+
+    # Comment below lines if VPN is enabled
+    # networks:               # Comment this line if vpn is enabled
+    #   - media-network           # Comment this line if vpn is enabled
+
+    # Unomment below line if vpn is enabled
+    network_mode: service:vpn
+
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=CST
+      - WEBUI_PORT=5080
+    volumes:
+      - /path/to/config/media-stack/qbittorrent-config:/config
+      - /path/to/appdata/media-root/torrent-downloads:/downloads
+
+    ## Comment/Disable below ports if VPN is enabled
+    # ports:
+    #   - 5080:5080
+    #   - 6881:6881
+    #   - 6881:6881/udp
+    restart: "unless-stopped"
+
+  radarr:
+    container_name: radarr
+    image: lscr.io/linuxserver/radarr:5.5.3
+    networks:
+      media-network:
+        ipv4_address: ${RADARR_STATIC_IP}
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=CST
+    ports:
+      - 7878:7878
+    volumes:
+      - /path/to/config/media-stack/radarr-config:/config
+      - /path/to/appdata/media-root:/data
+    restart: "unless-stopped"
+
+  sonarr:
+    image: linuxserver/sonarr:4.0.4
+    container_name: sonarr
+    networks:
+      # - media-network   # Comment this line if VPN is enabled
+    
+    ## Uncomment below lines if VPN is enabled
+      media-network:
+        ipv4_address: ${SONARR_STATIC_IP}
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=CST
+    volumes:
+      - /path/to/config/media-stack/sonarr-config:/config
+      - /path/to/appdata/media-root:/data   
+    ports:
+      - 8989:8989
+    restart: unless-stopped
+
+  prowlarr:
+    container_name: prowlarr
+    image: linuxserver/prowlarr:1.17.2
+
+    # Uncomment below if vpn is enabled
+    depends_on:               # Uncomment this line if vpn is enabled
+      - vpn                   # Uncomment this line if vpn is enabled
+    network_mode: service:vpn # Uncomment this line if vpn is enabled
+
+    # networks:               # Comment this line if vpn is enabled
+    #   - media-network           # Comment this line if vpn is enabled
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=CST
+    volumes:
+      - /path/to/config/media-stack/prowlarr-config:/config
+  
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=CST
+    volumes:
+      - /path/to/config/media-stack/sabnzbd-config/config:/config
+      - /path/to/appdata/media-root/usenet:/data/usenet:rw    
+    networks:
+    ##  - media-network   # Comment this line if VPN is enabled
+    ## Uncomment below lines if VPN is enabled
+      media-network:
+        ipv4_address: ${SABNZBD_STATIC_IP}    
+    ports:
+      - 8182:8080
+    restart: unless-stopped
+
+  overseerr:
+    image: sctx/overseerr:latest
+    container_name: overseerr
+    environment:
+      - LOG_LEVEL=debug
+      - TZ=CST
+      - PORT=5055 #optional
+    ports:
+      - 5055:5055
+    volumes:
+      - /path/to/config/overseerr:/app/config
+    networks:
+      media-network:
+        ipv4_address: ${OVERSEERR_STATIC_IP}   
+    restart: unless-stopped
+
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    network_mode: bridge
+    networks:
+      media-network:
+        ipv4_address: ${PLEX_IP_ADDRESS}
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=CST
+      - VERSION=docker
+      - PLEX_CLAIM=${PLEX_CLAIM_TOKEN}
+    devices:
+      - "/dev/dri/card0:/dev/dri/card0"
+      - "/dev/dri/renderD128:/dev/dri/renderD128"
+    ports:
+      - 32400:32400
+      - 32410:32410
+      - 32412:32412
+      - 32413:32413
+      - 32414:32414
+      - 32469:32469
+    volumes:
+      - /path/to/config/media-stack/plex-config:/config
+      - /path/to/appdata/media-root/media:/data
+    restart: unless-stopped
+
+
+volumes:
+  torrent-downloads:
+  radarr-config:
+  sonarr-config:
+  prowlarr-config:
+  qbittorrent-config:
+
+networks:
+  media-network:
+    external: true
