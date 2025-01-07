@@ -134,7 +134,8 @@ chown 1000:1000 /downloads/movies /downloads/tvshows
 
 - Connect to Plex at http://\<*server-ip*>:32400 and follow the guided setup.
 - If you run into a **Not Authorized** error, ensure the account you are using to set up the Plex instance has the generate Plex Claim Token in the .env file. If you run into further issues on a QNAP system, see the [following guide](https://www.reddit.com/r/PleX/comments/pjtl5m/qnap_cant_launch_setup_not_authorized/).
-- Add your media via Add Library, and set the library location to the **final** directories for both Sonarr and Radarr. If you are following the guide, these should be in your `/path/to/appdata/media-root` directory. 
+- Add your media via Add Library, and set the library location to the **final** directories for both Sonarr and Radarr. If you are following the guide, these should be in your `/path/to/appdata/media-root` directory.
+**Note: If you are intending to use hardware for transcoding, check the `docker-compose.example.yml` file for the services > plex > devices section and ensure your unique GPU is /dev is added**
 
 
 ## Configure Overseerr
