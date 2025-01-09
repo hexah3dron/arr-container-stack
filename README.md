@@ -15,7 +15,7 @@ The applications included are:
 ## Requirements
 
 - Docker version 24.10 and above
-- Docker compose version v2.15 and above'
+- Docker compose version v2.15 and above
 
 Copy the `docker-compose.example.yml` file and rename it `docker-compose.override.yml`. This will ensure you still have the original file to reference, and allow you to make your modifications without losing the original configuration.
 
