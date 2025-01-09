@@ -5,6 +5,7 @@ A complete containerized stack of serverr applications, Plex streaming, and both
 The applications included are:
 - Radarr
 - Sonarr
+- Overseerr
 - Prowlarr
 - SABnzbd
 - Qbittorrent
