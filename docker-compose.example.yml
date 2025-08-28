@@ -5,7 +5,7 @@ services:
     ## Read https://github.com/qdm12/gluetun-wiki/tree/main/setup/providers for details on configuring VPN for your service provider.
     profiles: ["vpn"]
     container_name: vpn
-    image: qmcgaw/gluetun:v3.38.0
+    image: qmcgaw/gluetun:latest
     cap_add:
       - NET_ADMIN
     environment:
@@ -52,7 +52,7 @@ services:
   ## Change password after install from UI -> Tools -> Options -> WebUI ##
   qbittorrent:
     container_name: qbittorrent
-    image: lscr.io/linuxserver/qbittorrent:4.6.4
+    image: lscr.io/linuxserver/qbittorrent:latest
 
     # Unomment below if vpn is enabled
     depends_on:               # Uncomment this line if vpn is enabled
@@ -83,7 +83,7 @@ services:
 
   radarr:
     container_name: radarr
-    image: lscr.io/linuxserver/radarr:5.5.3
+    image: lscr.io/linuxserver/radarr:latest
     networks:
       media-network:
         ipv4_address: ${RADARR_STATIC_IP}
@@ -120,7 +120,7 @@ services:
 
   prowlarr:
     container_name: prowlarr
-    image: linuxserver/prowlarr:1.17.2
+    image: linuxserver/prowlarr:latest
 
     # Uncomment below if vpn is enabled
     depends_on:               # Uncomment this line if vpn is enabled
